@@ -1,0 +1,198 @@
+---
+title: "TT_GreatLakesFish"
+author: "Jeff Grayum"
+date: "6/9/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Loading libraries
+```{r}
+library(tidyverse)
+library(tidytuesdayR)
+library(scales)
+library(ggthemes)
+```
+
+Loading datasets.
+```{r}
+tt <- tuesdata <- tidytuesdayR::tt_load('2021-06-08')
+
+fishing <- tt$fishing %>%
+  view()
+
+stocked <- tt$stocked
+
+stocked %>%
+  view()
+```
+
+
+```{r}
+fishing %>%
+  filter(!is.na(grand_total), 
+         lake == "Erie") %>%
+  mutate(species = fct_lump(species, 6)) %>%
+  filter(species != "Other",
+         year > 1920) %>%
+  group_by(year, lake, species) %>%
+  summarize(yr_sp_total = sum(grand_total)) %>%
+  ggplot(aes(year, yr_sp_total, fill = species)) +
+  geom_col() +
+  facet_wrap(~ species, scales = "free_y") +
+  scale_y_continuous(labels = comma) +
+  theme_fivethirtyeight() +
+  labs(x = "Year",
+       y = "Total catch",
+       title = "Yearly species totals caught in Lake Erie",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"),
+        legend.position = "none")
+
+fishing %>%
+  count(lake, sort = TRUE)
+
+
+fishing %>%
+  filter(!is.na(grand_total), 
+         lake == "Superior") %>%
+  mutate(species = fct_lump(species, 6)) %>%
+  filter(species != "Other",
+         year > 1920) %>%
+  group_by(year, species) %>%
+  summarize(yr_sp_total = sum(grand_total)) %>%
+  ggplot(aes(year, yr_sp_total, fill = species)) +
+  geom_col() +
+  facet_wrap(~ species, scales = "free_y") +
+  scale_y_continuous(labels = comma) +
+  theme_fivethirtyeight() +
+  labs(x = "Year",
+       y = "Total catch",
+       title = "Yearly species totals caught in Lake Superior",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"),
+        legend.position = "none")
+
+fishing %>%
+  filter(!is.na(grand_total), 
+         lake == "Huron") %>%
+  mutate(species = fct_lump(species, 6)) %>%
+  filter(species != "Other",
+         year > 1920) %>%
+  group_by(year, species) %>%
+  summarize(yr_sp_total = sum(grand_total)) %>%
+  ggplot(aes(year, yr_sp_total, fill = species)) +
+  geom_col() +
+  facet_wrap(~ species, scales = "free_y") +
+  scale_y_continuous(labels = comma) +
+  theme_fivethirtyeight() +
+  labs(x = "Year",
+       y = "Total catch",
+       title = "Yearly species totals caught in Lake Huron",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"),
+        legend.position = "none")
+```
+
+Now for David's stuff.
+```{r}
+fishing %>%
+  ggplot(aes(grand_total)) +
+  geom_histogram()
+
+fishing %>%
+  ggplot(aes(grand_total + 1)) +
+  geom_histogram() +
+  scale_x_log10(labels = comma) +
+  theme_fivethirtyeight() +
+  labs(x = "Grand total (log scale + 1)",
+       y = "Count",
+       title = "Histogram: Grand totals") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"))
+
+fishing %>%
+  ggplot(aes(values + 1)) +
+  geom_histogram() +
+  scale_x_log10(labels = comma) +
+  theme_fivethirtyeight() +
+  labs(x = "Value (log scale + 1)",
+       y = "Count",
+       title = "Histogram: Values") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"))
+
+fishing %>%
+  count(lake)
+
+fishing %>%
+  count(species, sort = TRUE)
+
+fishing %>%
+  group_by(year, lake, species) %>%
+  summarize(total_values = sum(values, na.rm = TRUE),
+            first_grand_total = min(grand_total, na.rm = TRUE),
+            n_grand_total = n_distinct(grand_total)) %>%
+  filter(year >= 2000) %>%
+  ungroup() %>%
+  count(n_grand_total)
+```
+
+
+```{r}
+fishing %>%
+  group_by(year) %>%
+  summarize(total_fish = sum(values, na.rm = TRUE)) %>%
+  ggplot(aes(year, total_fish)) +
+  geom_line() +
+  theme_fivethirtyeight() +
+  labs(x = "Year",
+       y = "Total fish",
+       title = "Total fish caught each year in the Great Lakes",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"))
+
+#Let's make ourselves a quick function
+summarize_fishing <- function(tbl) {
+  tbl %>%
+    summarize(n_obs = n(),
+              total_fish = sum(values, na.rm = TRUE)) %>%
+    arrange(desc(total_fish))
+}
+
+fishing %>%
+  group_by(year) %>%
+  summarize_fishing() %>%
+  ggplot(aes(year, total_fish)) +
+  geom_line() +
+  theme_fivethirtyeight() +
+  labs(x = "Year",
+       y = "Total fish",
+       title = "Total fish caught each year in the Great Lakes",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"))
+
+fishing %>%
+  group_by(decade = 10 * year %/% 10) %>%
+  summarize(total_fish = sum(values, na.rm = TRUE)) %>%
+  ggplot(aes(decade, total_fish)) +
+  geom_line() +
+  theme_fivethirtyeight() +
+  labs(x = "Decade",
+       y = "Total fish",
+       title = "Total fish caught each year in the Great Lakes",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"))
+```
+
