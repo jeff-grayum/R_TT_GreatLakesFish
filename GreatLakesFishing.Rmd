@@ -24,7 +24,9 @@ Loading datasets.
 tt <- tuesdata <- tidytuesdayR::tt_load('2021-06-08')
 
 fishing <- tt$fishing %>%
-  view()
+  filter(values >= 0) %>%
+  mutate(species = str_replace(str_to_title(species), "([^s])s$", "\\1")) 
+  
 
 stocked <- tt$stocked
 
@@ -186,13 +188,120 @@ fishing %>%
   group_by(decade = 10 * year %/% 10) %>%
   summarize(total_fish = sum(values, na.rm = TRUE)) %>%
   ggplot(aes(decade, total_fish)) +
-  geom_line() +
+  geom_col() +
   theme_fivethirtyeight() +
+  scale_y_continuous(labels = comma_format()) +
   labs(x = "Decade",
        y = "Total fish",
        title = "Total fish caught each year in the Great Lakes",
        caption = "Source: Great Lakes Fishery Commission") +
   theme(axis.title = element_text(),
         text = element_text(family = "Times New Roman"))
+
+fishing %>%
+  group_by(species) %>%
+  summarize_fishing()
+
+fishing %>%
+  mutate(species = fct_lump(species, 6, w = values),
+         species = fct_reorder(species, values, sum)) %>%
+  group_by(decade = 10 * year %/% 10,
+           species) %>%
+  summarize(total_fish = sum(values, na.rm = TRUE)) %>%
+  ggplot(aes(decade, total_fish, fill = species)) +
+  geom_col() +
+  theme_fivethirtyeight() +
+  scale_y_continuous(labels = comma_format()) +
+  labs(x = "Decade",
+       y = "Total fish",
+       title = "Total fish caught each year in the Great Lakes",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"))
+
+fishing %>%
+  mutate(species = fct_lump(species, 5, w = values),
+         species = fct_reorder(species, values, sum)) %>%
+  group_by(decade = 10 * year %/% 10,
+           species) %>%
+  summarize(total_fish = sum(values, na.rm = TRUE)) %>%
+  ggplot(aes(decade, total_fish, fill = species)) +
+  geom_col() +
+  theme_fivethirtyeight() +
+  facet_wrap(~species) +
+  scale_y_continuous(labels = comma_format()) +
+  labs(x = "Decade",
+       y = "Total fish",
+       title = "Total fish caught each year in the Great Lakes",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"))
+
+fishing %>%
+  mutate(species = fct_lump(species, 15, w = values),
+         species = fct_reorder(species, -values, sum)) %>%
+  group_by(decade = 10 * year %/% 10,
+           species) %>%
+  summarize(total_fish = sum(values, na.rm = TRUE)) %>%
+  ggplot(aes(decade, total_fish, fill = species)) +
+  geom_area() +
+  theme_fivethirtyeight() +
+  facet_wrap(~species) +
+  scale_y_continuous(labels = comma_format()) +
+  labs(x = "Decade",
+       y = "Total fish",
+       title = "Yearly fish production in the Great Lakes",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"),
+        legend.position = "none")
+
+
+#Oh boy we gotta do some cleaning!
+fishing %>%
+  filter(str_detect(species, "Cisco")) %>%
+  mutate(species = fct_lump(species, 8, w = values),
+         species = fct_reorder(species, -values, sum)) %>%
+  group_by(decade = 10 * year %/% 10,
+           species) %>%
+  summarize(total_fish = sum(values, na.rm = TRUE)) %>%
+  ggplot(aes(decade, total_fish, fill = species)) +
+  geom_area() +
+  theme_fivethirtyeight() +
+  facet_wrap(~species) +
+  scale_y_continuous(labels = comma_format()) +
+  labs(x = "Decade",
+       y = "Total fish",
+       title = "Yearly fish production in the Great Lakes",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"),
+        legend.position = "none")
+
+fishing %>%
+  group_by(species, year) %>%
+  summarize_fishing() %>%
+  summarize(total_fish = sum(total_fish),
+            peak_year = year[which.max(total_fish)]) %>%
+  arrange(desc(total_fish)) %>%
+  head(16) %>%
+  mutate(species = fct_reorder(species, peak_year)) %>%
+  ggplot(aes(peak_year, species)) +
+  geom_point(aes(size = total_fish)) +
+  theme_fivethirtyeight() +
+  scale_size_continuous(labels = comma_format()) +
+  labs(x = "Year of peak prodcution",
+       y = "Species",
+       title = "Peak year of production for Great Lake's fish",
+       caption = "Source: Great Lakes Fishery Commission",
+       size = "Total catch") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"))
+
+```
+
+Let's try and do some forecasting.
+```{r}
+
 ```
 
