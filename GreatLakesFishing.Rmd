@@ -17,6 +17,10 @@ library(tidyverse)
 library(tidytuesdayR)
 library(scales)
 library(ggthemes)
+#install.packages("ggExtra")
+library(ggExtra)
+#install.packages("ggfortify")
+library(ggfortify)
 ```
 
 Loading datasets.
@@ -210,14 +214,34 @@ fishing %>%
   summarize(total_fish = sum(values, na.rm = TRUE)) %>%
   ggplot(aes(decade, total_fish, fill = species)) +
   geom_col() +
-  theme_fivethirtyeight() +
+  theme_few() +
   scale_y_continuous(labels = comma_format()) +
   labs(x = "Decade",
        y = "Total fish",
        title = "Total fish caught each year in the Great Lakes",
        caption = "Source: Great Lakes Fishery Commission") +
   theme(axis.title = element_text(),
-        text = element_text(family = "Times New Roman"))
+        text = element_text(family = "Times New Roman"),
+        legend.position = "bottom")
+
+fishing %>%
+  mutate(species = fct_lump(species, 5, w = values),
+         species = fct_reorder(species, values, sum)) %>%
+  group_by(decade = 10 * year %/% 10,
+           species) %>%
+  summarize(total_fish = sum(values, na.rm = TRUE)) %>%
+  ggplot(aes(decade, total_fish, fill = species)) +
+  geom_col() +
+  theme_few() +
+  facet_wrap(~species) +
+  scale_y_continuous(labels = comma_format()) +
+  labs(x = "Decade",
+       y = "Total fish",
+       title = "Total fish caught each year in the Great Lakes",
+       caption = "Source: Great Lakes Fishery Commission") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"),
+        legend.position = "none")
 
 fishing %>%
   mutate(species = fct_lump(species, 5, w = values),
@@ -235,7 +259,8 @@ fishing %>%
        title = "Total fish caught each year in the Great Lakes",
        caption = "Source: Great Lakes Fishery Commission") +
   theme(axis.title = element_text(),
-        text = element_text(family = "Times New Roman"))
+        text = element_text(family = "Times New Roman"),
+        legend.position = "none")
 
 fishing %>%
   mutate(species = fct_lump(species, 15, w = values),
@@ -245,7 +270,7 @@ fishing %>%
   summarize(total_fish = sum(values, na.rm = TRUE)) %>%
   ggplot(aes(decade, total_fish, fill = species)) +
   geom_area() +
-  theme_fivethirtyeight() +
+  theme_few() +
   facet_wrap(~species) +
   scale_y_continuous(labels = comma_format()) +
   labs(x = "Decade",
@@ -288,7 +313,7 @@ fishing %>%
   mutate(species = fct_reorder(species, peak_year)) %>%
   ggplot(aes(peak_year, species)) +
   geom_point(aes(size = total_fish)) +
-  theme_fivethirtyeight() +
+  theme_tufte() +
   scale_size_continuous(labels = comma_format()) +
   labs(x = "Year of peak prodcution",
        y = "Species",
@@ -311,7 +336,7 @@ fishing %>%
   geom_area() +
   scale_y_continuous(labels = comma_format()) +
   facet_wrap(~ lake) +
-  theme_fivethirtyeight() +
+  theme_few() +
   theme(legend.position = "none",
         axis.title = element_text(),
         text = element_text(family = "Times New Roman")) +
@@ -372,7 +397,7 @@ stocked %>%
 stocked %>%
   ggplot(aes(year)) +
   geom_histogram(binwidth = 1) +
-  theme_fivethirtyeight() +
+  theme_tufte() +
   labs(x = "Year",
        y = "Count",
        title = "Yearly distribution") +
@@ -381,10 +406,12 @@ stocked %>%
         panel.grid.major = element_blank()) +
   scale_y_continuous(labels = comma)
 
+
+
 stocked %>%
   ggplot(aes(length)) +
   geom_histogram(bins = 200) +
-theme_fivethirtyeight() +
+theme_few() +
   labs(x = "Length (log scale)",
        y = "Count",
        title = "Length distribution") +
@@ -401,6 +428,27 @@ stocked %>%
 
 YALL WANNA DO SOME FORECASTING
 ```{r}
+fishing %>%
+  filter(species == "Yellow Perch") %>%
+  group_by(year, species) %>%
+  summarize_fishing() %>%
+  ggplot(aes(year, total_fish)) +
+  geom_line() +
+  theme_tufte() +
+  labs(x = "Year",
+       y = "Total Yellow Pearch",
+       title = "Total Yellow Perch caught each year") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman")) +
+  scale_y_continuous(labels = comma)
 
+by_year_species <- fishing %>%
+  group_by(year, species) %>%
+  summarize_fishing() %>%
+  ungroup()
+
+by_year_species %>%
+  filter(species == "Yellow Perch") %>%
+  
 ```
 
