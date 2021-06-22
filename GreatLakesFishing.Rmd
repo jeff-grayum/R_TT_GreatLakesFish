@@ -300,7 +300,106 @@ fishing %>%
 
 ```
 
-Let's try and do some forecasting.
+
+```{r}
+fishing %>%
+  mutate(lake = fct_reorder(lake, values, sum, .desc = TRUE)) %>%
+  group_by(decade = 10 * year %/% 10,
+           lake) %>%
+  summarize_fishing() %>%
+  ggplot(aes(decade, total_fish, fill = lake)) +
+  geom_area() +
+  scale_y_continuous(labels = comma_format()) +
+  facet_wrap(~ lake) +
+  theme_fivethirtyeight() +
+  theme(legend.position = "none",
+        axis.title = element_text(),
+        text = element_text(family = "Times New Roman")) +
+  labs(x = "Decade",
+       y = "Total production per decade (thousands of pounds)",
+       title = "Production across the Great Lakes over time")
+
+by_lake_species <- fishing %>%
+  filter(lake != "Saint Clair") %>%
+  mutate(species = fct_lump(species, 15, w = values),
+         species = fct_reorder(species, values, sum),
+         lake = fct_reorder(lake, values, sum, .desc = TRUE)) %>% 
+  group_by(lake, species) %>%
+  summarize_fishing() 
+
+by_lake_species %>%
+  ggplot(aes(lake, species, fill = total_fish)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "white", high = "darkblue", labels = comma) +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(),
+        text = element_text(family = "Times New Roman")) +
+  expand_limits(fill = 0) +
+  labs(x = "Lake",
+       y = "Species",
+       fill = "All time production") 
+
+#Next we're going to normalize our data.
+by_lake_species %>%
+  group_by(lake) %>%
+  mutate(pct = total_fish / sum(total_fish)) %>%
+  ggplot(aes(lake, species, fill = pct)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "white", high = "darkblue", labels = percent_format(accuracy = 1)) +
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(),
+        text = element_text(family = "Times New Roman")) +
+  expand_limits(fill = 0) +
+  labs(x = "Lake",
+       y = "Species",
+       fill = "All time production") 
+```
+
+Let's look at our other dataset.
+```{r}
+stocked <- stocked %>%
+  janitor::clean_names()
+
+stocked %>%
+  count(site, sort = TRUE)
+
+stocked %>%
+  count(st_site, sort = TRUE)
+
+stocked %>%
+  count(species, sort = TRUE)
+
+stocked %>%
+  ggplot(aes(year)) +
+  geom_histogram(binwidth = 1) +
+  theme_fivethirtyeight() +
+  labs(x = "Year",
+       y = "Count",
+       title = "Yearly distribution") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"),
+        panel.grid.major = element_blank()) +
+  scale_y_continuous(labels = comma)
+
+stocked %>%
+  ggplot(aes(length)) +
+  geom_histogram(bins = 200) +
+theme_fivethirtyeight() +
+  labs(x = "Length (log scale)",
+       y = "Count",
+       title = "Length distribution") +
+  theme(axis.title = element_text(),
+        text = element_text(family = "Times New Roman"),
+        panel.grid.major = element_blank()) +
+  scale_y_continuous(labels = comma) +
+  scale_x_log10(labels = comma)
+
+stocked %>%
+  group_by(species) %>%
+  summarize(median_length = median(length, na.rm = TRUE ))
+```
+
+YALL WANNA DO SOME FORECASTING
 ```{r}
 
 ```
